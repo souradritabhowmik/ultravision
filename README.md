@@ -5,4 +5,5 @@ ultravision: a minimalist web app for creating an online vision board — a plac
 - Upload or paste image URLs (e.g. from Pinterest) to form your personal board
 - Each board displays up to **8 images** in a simple grid
 - Auto-generates a unique **bookmarkable URL** so you can revisit your board anytime
-- Fully static
+
+site link: https://souradritabhowmik.github.io/ultravision/?board=my-ultravision
