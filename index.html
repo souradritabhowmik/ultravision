@@ -1,0 +1,491 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ultravision — your vision board</title>
+
+  <!-- Pixel videogame font -->
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg: #f6f3fb;       /* very light lilac */
+      --card: #efe9fb;     /* pastel lavender */
+      --accent: #d8c7f5;   /* soft violet accent */
+      --muted: #7b6f95;
+      --text: #2b2540;
+      --radius: 12px;
+      --max-width: 1100px;
+    }
+    html,body{height:100%;margin:0;font-family:'Press Start 2P',monospace;background:var(--bg);color:var(--text)}
+    .wrap{max-width:var(--max-width);margin:20px auto;padding:18px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    h1{font-size:18px;margin:0;text-transform:lowercase}
+    .subtitle{font-size:11px;color:var(--muted);margin-top:6px}
+    .card{background:var(--card);padding:16px;border-radius:var(--radius);box-shadow:0 8px 20px rgba(43,37,64,0.06)}
+    .controls{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:12px}
+    label{font-size:10px}
+    input[type=text], textarea, select{
+      padding:8px;border-radius:8px;border:1px solid rgba(43,37,64,0.06);background:transparent;font-family:inherit;font-size:11px
+    }
+    input[type=file]{font-size:11px}
+    .btn{padding:8px 12px;border-radius:10px;background:var(--accent);border:none;cursor:pointer;font-family:inherit}
+    .small{font-size:11px;color:var(--muted)}
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:160px;gap:12px;margin-top:16px}
+    .box{border-radius:10px;background:linear-gradient(135deg, rgba(255,255,255,0.6), rgba(255,255,255,0.2));display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;border:1px dashed rgba(43,37,64,0.06)}
+    .box img{width:100%;height:100%;object-fit:cover}
+    .placeholder{font-size:9px;color:var(--muted);text-align:center;padding:8px}
+    .box .actions{position:absolute;left:6px;bottom:6px;display:flex;gap:6px}
+    .mini{padding:6px 8px;border-radius:8px;background:rgba(255,255,255,0.85);backdrop-filter:blur(2px);font-size:10px;border:1px solid rgba(43,37,64,0.04);cursor:pointer}
+    .row{display:flex;gap:8px;align-items:center}
+    footer{margin-top:14px;font-size:11px;color:var(--muted)}
+    @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}}
+    /* small modal */
+    .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(11,8,18,0.35);z-index:40}
+    .modal.open{display:flex}
+    .modal .panel{background:var(--card);padding:14px;border-radius:10px;max-width:520px;width:92%}
+    .meta-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .hint{font-size:10px;color:var(--muted);margin-top:8px}
+    .top-actions{display:flex;gap:8px;align-items:center}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>ultravision</h1>
+        <div class="subtitle">visualize your dream life — bookmark your board and visit daily</div>
+      </div>
+
+      <div style="text-align:right">
+        <div class="small">client-side only · boards saved in your browser</div>
+        <div class="small">export/import to move boards between devices</div>
+      </div>
+    </header>
+
+    <div class="card" style="margin-top:12px">
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+        <div style="min-width:220px">
+          <label>board name (slug):</label>
+          <div class="row" style="margin-top:6px">
+            <input id="boardName" type="text" placeholder="my-dream-life" />
+            <button id="createBoardBtn" class="btn">open / create</button>
+          </div>
+          <div class="hint">Bookmark the page with <code>?board=your-slug</code> to return. Board data stays in this browser.</div>
+        </div>
+
+        <div style="flex:1;min-width:240px">
+          <label>add images (upload files or paste image URLs)</label>
+          <div class="meta-row" style="margin-top:6px">
+            <input id="fileInput" type="file" accept="image/*" multiple />
+            <textarea id="urlBox" rows="2" placeholder="Paste image URLs here (one per line)"></textarea>
+            <button id="addImagesBtn" class="btn">add to board</button>
+          </div>
+          <div class="hint">Uploads are stored as local data (private). For Pinterest, use 'Copy image address' and paste here.</div>
+        </div>
+
+        <div style="min-width:220px">
+          <label>board actions</label>
+          <div class="meta-row" style="margin-top:6px">
+            <button id="exportBtn" class="btn">export JSON</button>
+            <input id="importFile" type="file" accept="application/json" style="display:none" />
+            <button id="importBtn" class="btn">import JSON</button>
+            <button id="clearBtn" class="btn">clear board</button>
+          </div>
+          <div class="hint">Export to back up or import on another device.</div>
+        </div>
+      </div>
+
+      <div class="grid" id="grid" aria-live="polite">
+        <!-- 8 boxes -->
+      </div>
+
+      <div style="margin-top:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <div class="small">Board: <strong id="currentBoardLabel">—</strong></div>
+        <div class="small">Bookmark this URL: <code id="bookmarkURL">—</code></div>
+      </div>
+    </div>
+
+    <footer>Made with pastel lavender vibes ✨ — ultravision</footer>
+  </div>
+
+  <!-- modal for editing a single slot -->
+  <div id="modal" class="modal" role="dialog" aria-modal="true">
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:13px">edit box</div>
+        <div>
+          <button class="mini" id="modalClose">close</button>
+        </div>
+      </div>
+
+      <div style="margin-top:10px">
+        <label>Upload image</label>
+        <input id="modalFile" type="file" accept="image/*" />
+      </div>
+
+      <div style="margin-top:8px">
+        <label>Or paste image URL</label>
+        <input id="modalURL" type="text" placeholder="https://..." />
+        <div style="margin-top:8px;display:flex;gap:8px">
+          <button id="modalSave" class="btn">save</button>
+          <button id="modalRemove" class="mini">remove</button>
+        </div>
+      </div>
+
+      <div class="hint">If pasted URLs fail due to cross-origin, try downloading and uploading the image file.</div>
+    </div>
+  </div>
+
+  <script>
+    /***************
+     * Utilities
+     ***************/
+    const MAX_IMAGES = 8;
+    function slugify(s){
+      return String(s || '').trim().toLowerCase().replace(/[^a-z0-9-]+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'') || 'board-' + Math.random().toString(36).slice(2,9)
+    }
+
+    function keyFor(slug){ return 'ultravision::' + slug }
+
+    async function fileToDataURL(file){
+      return new Promise((res, rej) => {
+        const fr = new FileReader();
+        fr.onload = () => res(fr.result);
+        fr.onerror = () => rej(new Error('could not read file'));
+        fr.readAsDataURL(file);
+      });
+    }
+
+    // fetch image and convert to data URL (may fail due to CORS)
+    async function fetchToDataURL(url){
+      try {
+        const resp = await fetch(url, {mode: 'cors'});
+        if(!resp.ok) throw new Error('fetch failed');
+        const blob = await resp.blob();
+        return await new Promise((res, rej) => {
+          const fr = new FileReader();
+          fr.onload = () => res(fr.result);
+          fr.onerror = () => rej(new Error('read blob failed'));
+          fr.readAsDataURL(blob);
+        });
+      } catch(e){
+        console.warn('fetchToDataURL failed for', url, e);
+        return null;
+      }
+    }
+
+    /***************
+     * App state
+     ***************/
+    let currentSlug = null;
+    let board = { images: Array(MAX_IMAGES).fill(null) }; // images: [ dataURL | remoteURL | null ]
+
+    // DOM
+    const boardNameInput = document.getElementById('boardName');
+    const createBoardBtn = document.getElementById('createBoardBtn');
+    const fileInput = document.getElementById('fileInput');
+    const urlBox = document.getElementById('urlBox');
+    const addImagesBtn = document.getElementById('addImagesBtn');
+    const grid = document.getElementById('grid');
+    const currentBoardLabel = document.getElementById('currentBoardLabel');
+    const bookmarkURL = document.getElementById('bookmarkURL');
+    const exportBtn = document.getElementById('exportBtn');
+    const importBtn = document.getElementById('importBtn');
+    const importFile = document.getElementById('importFile');
+    const clearBtn = document.getElementById('clearBtn');
+
+    // modal
+    const modal = document.getElementById('modal');
+    const modalClose = document.getElementById('modalClose');
+    const modalFile = document.getElementById('modalFile');
+    const modalURL = document.getElementById('modalURL');
+    const modalSave = document.getElementById('modalSave');
+    const modalRemove = document.getElementById('modalRemove');
+    let modalIndex = null;
+
+    /***************
+     * Rendering
+     ***************/
+    function renderGrid(){
+      grid.innerHTML = '';
+      for(let i=0;i<MAX_IMAGES;i++){
+        const box = document.createElement('div');
+        box.className = 'box';
+        if(board.images[i]){
+          const img = document.createElement('img');
+          img.src = board.images[i];
+          img.alt = 'vision';
+          box.appendChild(img);
+        } else {
+          const ph = document.createElement('div');
+          ph.className = 'placeholder';
+          ph.innerHTML = `empty box<br>click to edit`;
+          box.appendChild(ph);
+        }
+        // actions
+        const actions = document.createElement('div');
+        actions.className = 'actions';
+        const editBtn = document.createElement('button');
+        editBtn.className = 'mini';
+        editBtn.textContent = 'edit';
+        editBtn.onclick = () => openModal(i);
+        actions.appendChild(editBtn);
+
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'mini';
+        removeBtn.textContent = 'remove';
+        removeBtn.onclick = () => {
+          board.images[i] = null; saveBoard(); renderGrid();
+        };
+        actions.appendChild(removeBtn);
+
+        box.appendChild(actions);
+        grid.appendChild(box);
+      }
+
+      currentBoardLabel.textContent = currentSlug || '—';
+      const url = new URL(window.location.href);
+      if(currentSlug) {
+        url.searchParams.set('board', currentSlug);
+        bookmarkURL.textContent = url.toString();
+      } else {
+        bookmarkURL.textContent = 'create a board to get a bookmarkable URL';
+      }
+    }
+
+    /***************
+     * Persistence
+     ***************/
+    function saveBoard(){
+      if(!currentSlug) return;
+      try {
+        localStorage.setItem(keyFor(currentSlug), JSON.stringify(board));
+      } catch(e){
+        alert('Could not save board (localStorage limit?). Try exporting before adding more.');
+        console.error(e)
+      }
+    }
+
+    function loadBoard(slug){
+      currentSlug = slug;
+      const raw = localStorage.getItem(keyFor(slug));
+      if(raw){
+        try {
+          const parsed = JSON.parse(raw);
+          if(parsed && Array.isArray(parsed.images)){
+            // ensure length
+            board = { images: parsed.images.slice(0, MAX_IMAGES).concat(Array(MAX_IMAGES).fill(null)).slice(0,MAX_IMAGES) };
+          } else {
+            board = { images: Array(MAX_IMAGES).fill(null) };
+          }
+        } catch(e){
+          board = { images: Array(MAX_IMAGES).fill(null) };
+        }
+      } else {
+        board = { images: Array(MAX_IMAGES).fill(null) };
+      }
+      renderGrid();
+      // set input
+      boardNameInput.value = slug;
+      // update URL without reloading
+      const url = new URL(window.location.href);
+      url.searchParams.set('board', slug);
+      window.history.replaceState({}, '', url);
+    }
+
+    function createOrOpenBoardFromInput(){
+      const name = boardNameInput.value || '';
+      const slug = slugify(name);
+      loadBoard(slug);
+      saveBoard();
+      renderGrid();
+    }
+
+    /***************
+     * Add images (file input & URLs)
+     ***************/
+    addImagesBtn.addEventListener('click', async () => {
+      if(!currentSlug){
+        alert('Create/open a board first (enter a board name and click open / create).');
+        return;
+      }
+      // files
+      const files = Array.from(fileInput.files || []);
+      const urls = (urlBox.value || '').split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+
+      let idx = board.images.findIndex(x=>x===null);
+      if(idx === -1){
+        alert('Board already has 8 images. Remove some first or replace via edit.');
+      }
+      // add files (converted to data URLs)
+      for(const f of files){
+        if(idx === -1) break;
+        try {
+          const durl = await fileToDataURL(f);
+          board.images[idx] = durl;
+          idx = board.images.findIndex(x=>x===null);
+        } catch(e){
+          console.warn('file read error', e);
+        }
+      }
+
+      // add URLs: try fetch-to-dataURL first (safer), else store raw URL
+      for(const u of urls){
+        if(idx === -1) break;
+        let stored = null;
+        try {
+          const fetched = await fetchToDataURL(u);
+          if(fetched) stored = fetched;
+          else stored = u; // fallback to raw URL
+        } catch(e){
+          stored = u;
+        }
+        board.images[idx] = stored;
+        idx = board.images.findIndex(x=>x===null);
+      }
+
+      // clear inputs
+      fileInput.value = '';
+      urlBox.value = '';
+      saveBoard();
+      renderGrid();
+    });
+
+    /***************
+     * Modal (edit single slot)
+     ***************/
+    function openModal(index){
+      modalIndex = index;
+      modal.classList.add('open');
+      modalURL.value = board.images[index] && board.images[index].startsWith('data:') ? '' : (board.images[index] || '');
+      modalFile.value = '';
+    }
+    function closeModal(){ modal.classList.remove('open'); modalIndex = null; }
+
+    modalClose.addEventListener('click', closeModal);
+    modal.addEventListener('click', (ev) => {
+      if(ev.target === modal) closeModal();
+    });
+
+    modalSave.addEventListener('click', async () => {
+      if(modalIndex === null) return;
+      // if file chosen, use it
+      const f = modalFile.files[0];
+      if(f){
+        try {
+          const d = await fileToDataURL(f);
+          board.images[modalIndex] = d;
+          saveBoard();
+          renderGrid();
+          closeModal();
+          return;
+        } catch(e){
+          alert('Could not read file');
+          return;
+        }
+      }
+      // else use URL field
+      const u = (modalURL.value || '').trim();
+      if(!u){
+        alert('Paste a URL or upload a file, or use remove.');
+        return;
+      }
+      // try fetch->dataURL for better persistence
+      const fetched = await fetchToDataURL(u);
+      board.images[modalIndex] = fetched || u;
+      saveBoard();
+      renderGrid();
+      closeModal();
+    });
+
+    modalRemove.addEventListener('click', () => {
+      if(modalIndex === null) return;
+      board.images[modalIndex] = null;
+      saveBoard();
+      renderGrid();
+      closeModal();
+    });
+
+    /***************
+     * Export / Import
+     ***************/
+    exportBtn.addEventListener('click', ()=> {
+      if(!currentSlug){ alert('Open a board first'); return; }
+      const payload = { slug: currentSlug, board };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ultravision-${currentSlug}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+
+    importBtn.addEventListener('click', ()=> importFile.click());
+    importFile.addEventListener('change', async (e) => {
+      const f = importFile.files[0];
+      if(!f) return;
+      try {
+        const txt = await f.text();
+        const parsed = JSON.parse(txt);
+        if(parsed && parsed.slug && parsed.board && Array.isArray(parsed.board.images)){
+          localStorage.setItem(keyFor(parsed.slug), JSON.stringify(parsed.board));
+          loadBoard(parsed.slug);
+          saveBoard();
+          alert('Imported board: ' + parsed.slug + '. It is now open.');
+        } else {
+          alert('Invalid import file.');
+        }
+      } catch(e){
+        alert('Could not import file.');
+        console.error(e);
+      }
+      importFile.value = '';
+    });
+
+    /***************
+     * Clear board
+     ***************/
+    clearBtn.addEventListener('click', ()=> {
+      if(!currentSlug) return alert('Open a board first');
+      if(!confirm('Clear all images from this board?')) return;
+      board = { images: Array(MAX_IMAGES).fill(null) };
+      saveBoard();
+      renderGrid();
+    });
+
+    /***************
+     * Create / Open
+     ***************/
+    createBoardBtn.addEventListener('click', (ev)=> {
+      ev.preventDefault();
+      createOrOpenBoardFromInput();
+    });
+
+    /***************
+     * Init: check query param for board
+     ***************/
+    function initFromURL(){
+      const params = new URLSearchParams(window.location.search);
+      const b = params.get('board');
+      if(b){
+        const slug = slugify(b);
+        loadBoard(slug);
+      } else {
+        // if none, create a default board name and load
+        const defaultSlug = 'my-ultravision';
+        loadBoard(defaultSlug);
+      }
+      // create grid placeholders
+      renderGrid();
+    }
+
+    // initialize
+    initFromURL();
+  </script>
+</body>
+</html>
