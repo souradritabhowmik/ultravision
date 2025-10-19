@@ -55,24 +55,24 @@
     <header>
       <div>
         <h1>ultravision</h1>
-        <div class="subtitle">visualize your dream life — bookmark your board and visit daily</div>
+        <div class="subtitle"> visualize your dream life </div>
       </div>
 
       <div style="text-align:right">
-        <div class="small">client-side only · boards saved in your browser</div>
-        <div class="small">export/import to move boards between devices</div>
+        <div class="small"> *:･ﾟ✧*:･ﾟ </div>
+        <div class="small"> view your dream life @ a glance </div>
       </div>
     </header>
 
     <div class="card" style="margin-top:12px">
       <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
         <div style="min-width:220px">
-          <label>board name (slug):</label>
+          <label>board name (vision):</label>
           <div class="row" style="margin-top:6px">
             <input id="boardName" type="text" placeholder="my-dream-life" />
             <button id="createBoardBtn" class="btn">open / create</button>
           </div>
-          <div class="hint">Bookmark the page with <code>?board=your-slug</code> to return. Board data stays in this browser.</div>
+          <div class="hint">Bookmark the page with <code>?board=your-vision</code> to return. Board data stays in this browser.</div>
         </div>
 
         <div style="flex:1;min-width:240px">
@@ -107,7 +107,7 @@
       </div>
     </div>
 
-    <footer>Made with pastel lavender vibes ✨ — ultravision</footer>
+    <footer> text-align: center; *:･ﾟ✧*:･ﾟ *:･ﾟ✧*:･ﾟ *:･ﾟ✧*:･ﾟ </footer>
   </div>
 
   <!-- modal for editing a single slot -->
@@ -147,7 +147,7 @@
       return String(s || '').trim().toLowerCase().replace(/[^a-z0-9-]+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'') || 'board-' + Math.random().toString(36).slice(2,9)
     }
 
-    function keyFor(slug){ return 'ultravision::' + slug }
+    function keyFor(vision){ return 'ultravision::' + vision }
 
     async function fileToDataURL(file){
       return new Promise((res, rej) => {
